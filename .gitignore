@@ -13,3 +13,6 @@ __pycache__/
 
 # Logs
 *.log
+
+# Personal files
+project.txt
