@@ -1,11 +1,11 @@
 import asyncio
 import asyncpg
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 import os
 
-# Load the lightweight embedding model
+# Load the lightweight embedding model using ONNX backend (fastembed)
 # all-MiniLM-L6-v2 produces 384-dimensional vectors
-model = SentenceTransformer('all-MiniLM-L6-v2')
+model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 async def main():
     print("Connecting to PostgreSQL to seed vectors...")
@@ -30,7 +30,8 @@ async def main():
     for row in rows:
         # We embed both the title and the content to get rich semantic meaning
         text_to_embed = f"Title: {row['title']}\nContent: {row['content']}"
-        embedding = model.encode(text_to_embed).tolist()
+        embeddings_gen = model.embed([text_to_embed])
+        embedding = list(embeddings_gen)[0].tolist()
         
         # Format as string '[val1, val2, ...]' which Postgres vector extension accepts
         vector_str = "[" + ",".join(map(str, embedding)) + "]"

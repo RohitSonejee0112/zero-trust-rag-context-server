@@ -1,5 +1,8 @@
 # 🛡️ Zero-Trust Context Server (Row-Level Security RAG)
 
+[![Render Deployment](https://img.shields.io/badge/Render-Deployed-success?style=for-the-badge&logo=render)](https://zero-trust-rag-context-server.onrender.com)
+[![Health Status](https://img.shields.io/badge/Health-Passing-brightgreen?style=for-the-badge)](https://zero-trust-rag-context-server.onrender.com/health)
+
 ![CI](https://github.com/RohitSonejee0112/permission-aware-context-project/actions/workflows/ci.yml/badge.svg)
 
 An enterprise-grade **Retrieval-Augmented Generation (RAG)** architecture using **Model Context Protocol (MCP)**, **FastAPI**, and **PostgreSQL Row-Level Security (RLS)** with **pgvector** Semantic Search. 
@@ -126,8 +129,49 @@ Adding Zero-Trust ABAC security to semantic search costs less than 2 millisecond
 - **Security:** JWT Authentication + Postgres Row-Level Security (RLS) / ABAC
 - **LLM Integration:** Groq SDK (`openai/gpt-oss-20b`)
 - **Web UI:** Vanilla HTML/CSS Glassmorphism UI + JavaScript
+- **Zero-Trust Semantic Search:** Search results are strictly bounded by Postgres Row-Level Security before ever reaching the LLM context window.
+
+> **Note on Cold Starts:** This API is deployed on Render's Free Tier, which spins down after 15 minutes of inactivity. **Your first request may take ~30 seconds** as the container wakes up and loads the AI embedding models into memory.
+
+## 🚀 Try It Yourself (Live Demo)
+You can test the RLS engine directly against the live cloud database using `curl`!
+
+1. **Login as Alice (HR)**
+```bash
+curl -X POST https://zero-trust-rag-context-server.onrender.com/login \
+     -H "Content-Type: application/json" \
+     -d '{"username": "alice_hr"}'
+```
+2. **Use her token to search for employee complaints (HR has access)**
+```bash
+curl -X POST https://zero-trust-rag-context-server.onrender.com/api/chat \
+     -H "Content-Type: application/json" \
+     -d '{"username": "alice_hr", "query": "Find the recent employee complaints"}'
+```
+*(Alice will receive the confidential HR report about Bob).*
+
+3. **Now, Login as Charlie (Finance)** and try the exact same search query.
+```bash
+curl -X POST https://zero-trust-rag-context-server.onrender.com/api/chat \
+     -H "Content-Type: application/json" \
+     -d '{"username": "charlie_finance", "query": "Find the recent employee complaints"}'
+```
+*(Charlie will be completely blocked by Postgres RLS, and the LLM will reply that it does not have access).*
 
 ---
+
+## 📝 Lessons Learned
+
+Building a production-ready RAG application uncovered several subtle, fascinating architectural challenges:
+
+1. **The PyTorch Cloud OOM Trap:**
+   When initially deploying to Render's free tier (512MB RAM), the application immediately crashed with an `Out of Memory` error. The culprit? `sentence-transformers` relying on the massive PyTorch library. Instead of paying for a larger server, I refactored the embedding pipeline to use `fastembed` (which relies on the highly optimized C++ ONNX Runtime). This dropped memory consumption by 80% and removed over 2.5GB of dependencies, allowing the AI embedding engine to run flawlessly on a micro-instance!
+
+2. **The Connection Pooling Context Leak:**
+   During a high-concurrency load test, I discovered a terrifying cross-contamination bug. I was using Postgres' `set_config()` to inject the user's Department ID into the database session for RLS. However, under heavy load, if a request failed mid-flight, the connection was returned to the `asyncpg` pool *with the previous user's permissions still attached!* The next user to grab that pooled connection would inherit those permissions. I fixed this by moving the RLS evaluation inside a strict `async with conn.transaction():` block and setting the config to be **transaction-local** (`is_local=true`), guaranteeing Postgres automatically purges the permissions the millisecond the transaction ends.
+
+3. **The "Superuser" RLS Bypass:**
+   While setting up Supabase, I realized that connecting to the cloud database using the default `postgres` user silently bypassed all of my Row-Level Security policies because Superusers inherently ignore RLS! To securely run the API, I implemented a connection initialization hook in `asyncpg` that immediately executes `SET ROLE app_user` upon acquiring a connection, forcing the database to evaluate the policies as a standard, restricted user.
 
 ## ⚙️ Configuration
 

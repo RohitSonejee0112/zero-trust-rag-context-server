@@ -14,10 +14,11 @@ groq_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
 
 from mcp.server.mcpserver import MCPServer
 from mcp.types import Tool, TextContent
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 
-# Load embedding model
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+# Load embedding model using lightweight ONNX backend (fastembed)
+# all-MiniLM-L6-v2 produces 384-dimensional vectors
+embedding_model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 SECRET_KEY = "super-secret-key"
 
@@ -25,8 +26,14 @@ SECRET_KEY = "super-secret-key"
 async def lifespan(app: FastAPI):
     # Connect using DATABASE_URL if provided (Cloud Deployments), otherwise use local docker defaults
     db_url = os.getenv("DATABASE_URL")
+    
+    async def init_connection(conn):
+        # We must switch to the non-superuser 'app_user' role.
+        # If we query as 'postgres' (the Supabase default), we bypass all RLS policies!
+        await conn.execute("SET ROLE app_user")
+        
     if db_url:
-        app.state.db_pool = await asyncpg.create_pool(db_url)
+        app.state.db_pool = await asyncpg.create_pool(db_url, setup=init_connection)
     else:
         app.state.db_pool = await asyncpg.create_pool(
             user='app_user',
@@ -91,32 +98,30 @@ async def search_documents(query: str, token: str) -> list[TextContent]:
     if not department_id:
         return [TextContent(type="text", text="Error: Token missing department_id")]
 
-    # 2. Convert the text query into a semantic vector
-    query_vector = embedding_model.encode(query).tolist()
-    vector_str = "[" + ",".join(map(str, query_vector)) + "]"
+    # 2. Convert the text query into a semantic vector using fastembed
+    embeddings_gen = embedding_model.embed([query])
+    query_vector = list(embeddings_gen)[0].tolist()
     
     async with app.state.db_pool.acquire() as conn:
         # 3. SET THE SESSION VARIABLES FOR ABAC RLS
-        await conn.execute("SELECT set_config('app.current_department_id', $1, false)", str(department_id))
-        await conn.execute("SELECT set_config('app.current_user_id', $1, false)", str(user_id))
-        await conn.execute("SELECT set_config('app.current_clearance_level', $1, false)", str(clearance_level))
-        
-        # 4. EXECUTE SEMANTIC SEARCH BOUNDED BY RLS
-        # Postgres will ONLY evaluate distance on rows that pass the RLS policy!
-        rows = await conn.fetch(
-            """
-            SELECT title, content, 1 - (embedding <=> $1::vector) AS similarity 
-            FROM documents 
-            ORDER BY embedding <=> $1::vector 
-            LIMIT 3
-            """,
-            vector_str
-        )
-        
-        # Reset the configuration to prevent leaking across pooled connections
-        await conn.execute("SELECT set_config('app.current_department_id', '', false)")
-        await conn.execute("SELECT set_config('app.current_user_id', '', false)")
-        await conn.execute("SELECT set_config('app.current_clearance_level', '', false)")
+        # Wrap in a transaction and use is_local=true to prevent concurrency leaks in connection pools
+        async with conn.transaction():
+            await conn.execute("SELECT set_config('app.current_department_id', $1, true)", str(department_id))
+            await conn.execute("SELECT set_config('app.current_user_id', $1, true)", str(user_id))
+            await conn.execute("SELECT set_config('app.current_clearance_level', $1, true)", str(clearance_level))
+            
+            # 4. EXECUTE SEMANTIC SEARCH BOUNDED BY RLS
+            # Postgres will ONLY evaluate distance on rows that pass the RLS policy!
+            rows = await conn.fetch(
+                """
+                SELECT title, content, 
+                       1 - (embedding <=> $1::vector) as similarity
+                FROM documents
+                ORDER BY embedding <=> $1::vector
+                LIMIT 5
+                """,
+                "[" + ",".join(map(str, query_vector)) + "]"
+            )
 
         if not rows:
             return [TextContent(type="text", text="No documents found matching your query.")]
@@ -220,6 +225,10 @@ async def chat_endpoint(req: ChatRequest):
     )
     
     return {"response": final_response.choices[0].message.content}
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
 
 app.mount("/mcp", mcp.sse_app())
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

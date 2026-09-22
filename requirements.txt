@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 asyncpg
-sentence-transformers
+fastembed
 mcp
 python-dotenv
 pyjwt
