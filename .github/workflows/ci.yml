@@ -54,5 +54,5 @@ jobs:
     - name: Run Tests
       run: |
         python server.py &
-        sleep 5
+        timeout 60 bash -c 'until curl -s http://localhost:8000/health > /dev/null; do sleep 2; done'
         pytest test_rls.py -v
