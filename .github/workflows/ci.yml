@@ -53,6 +53,7 @@ jobs:
         
     - name: Run Tests
       run: |
+        export GROQ_API_KEY="dummy-key-for-ci"
         python server.py &
         timeout 60 bash -c 'until curl -s http://localhost:8000/health > /dev/null; do sleep 2; done'
         pytest test_rls.py -v
