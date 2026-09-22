@@ -53,4 +53,6 @@ jobs:
         
     - name: Run Tests
       run: |
+        python server.py &
+        sleep 5
         pytest test_rls.py -v
