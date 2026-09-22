@@ -2,7 +2,7 @@
 
 [![Render Deployment](https://img.shields.io/badge/Render-Deployed-success?style=for-the-badge&logo=render)](https://zero-trust-rag-context-server.onrender.com)
 [![Health Status](https://img.shields.io/badge/Health-Passing-brightgreen?style=for-the-badge)](https://zero-trust-rag-context-server.onrender.com/health)
-![CI](https://github.com/RohitSonejee0112/permission-aware-context-project/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/RohitSonejee0112/zero-trust-rag-context-server/actions/workflows/ci.yml/badge.svg)
 
 > ### 🚨 [Click Here to Try the Live Web UI Demo!](https://zero-trust-rag-context-server.onrender.com) 🚨
 > *Test the system by logging in as different department users to watch Postgres Row-Level Security actively block or allow document retrieval in real-time!*
@@ -202,6 +202,9 @@ This demo uses an unauthenticated mock login (`/login` accepts any username with
 **JWT Signing Secret**
 The repository uses a default fallback secret for JWT signing to ensure the demo runs out-of-the-box. In a production environment, the `JWT_SECRET_KEY` environment variable must be set to securely mint tokens and prevent malicious actors from forging Executive-clearance JWTs.
 
+**MCP Tool JWT Validation**
+For this demo, the MCP context server implicitly trusts the claims embedded in the incoming JWT (e.g., department and clearance level). In a strict production system, the backend should re-validate the token claims or query the active user roles directly from the database on every request to handle real-time permission revocations.
+
 ## 🗺️ Roadmap (Next 10%)
 
 - **Real Identity Provider:** Integrate real OAuth/OIDC login to replace the mock login boundary.
@@ -253,4 +256,4 @@ python server.py
 ### 5. Access the Web UI
 Open your browser and navigate to:
 **http://localhost:8000**
-Use the top-left dropdown to switch between Alice (Manager), David (Intern), Bob (Eng), and Charlie (Finance) to test how the Postgres kernel dynamically blocks or permits documents in real-time.
+Use the top-left dropdown to switch between Alice (HR Manager), David (Intern), Bob (Eng), and Charlie (Finance) to test how the Postgres kernel dynamically blocks or permits documents in real-time.
