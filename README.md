@@ -2,8 +2,10 @@
 
 [![Render Deployment](https://img.shields.io/badge/Render-Deployed-success?style=for-the-badge&logo=render)](https://zero-trust-rag-context-server.onrender.com)
 [![Health Status](https://img.shields.io/badge/Health-Passing-brightgreen?style=for-the-badge)](https://zero-trust-rag-context-server.onrender.com/health)
-
 ![CI](https://github.com/RohitSonejee0112/permission-aware-context-project/actions/workflows/ci.yml/badge.svg)
+
+> ### 🚨 [Click Here to Try the Live Web UI Demo!](https://zero-trust-rag-context-server.onrender.com) 🚨
+> *Test the system by logging in as different department users to watch Postgres Row-Level Security actively block or allow document retrieval in real-time!*
 
 An enterprise-grade **Retrieval-Augmented Generation (RAG)** architecture using **Model Context Protocol (MCP)**, **FastAPI**, and **PostgreSQL Row-Level Security (RLS)** with **pgvector** Semantic Search. 
 
