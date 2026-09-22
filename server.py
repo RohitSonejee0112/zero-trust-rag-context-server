@@ -20,7 +20,8 @@ from fastembed import TextEmbedding
 # all-MiniLM-L6-v2 produces 384-dimensional vectors
 embedding_model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-SECRET_KEY = "super-secret-key"
+# WARNING: In production, always pull this from an environment variable!
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super-secret-key")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

@@ -11,7 +11,7 @@ By combining **JSON Web Tokens (JWT)** and **PostgreSQL RLS**, this architecture
 
 ## 🏗️ Architecture
 
-![Architecture Diagram](Zero-Trust%20AI%20Document%20Retrieval%20Architecture.png)
+![Architecture Diagram](Zero-Trust%20AI%20Document%20Retrieval%20Architecture%20updated.png)
 *(Note: A simplified view of the core RLS enforcement path — see Features below for exact ABAC clearance and vector search details).*
 
 ## 🚀 Features
@@ -172,6 +172,20 @@ Building a production-ready RAG application uncovered several subtle, fascinatin
 
 3. **The "Superuser" RLS Bypass:**
    While setting up Supabase, I realized that connecting to the cloud database using the default `postgres` user silently bypassed all of my Row-Level Security policies because Superusers inherently ignore RLS! To securely run the API, I implemented a connection initialization hook in `asyncpg` that immediately executes `SET ROLE app_user` upon acquiring a connection, forcing the database to evaluate the policies as a standard, restricted user.
+
+## 🔒 Threat Model & Known Limitations
+
+**Unauthenticated Mock Login Boundary**
+This demo uses an unauthenticated mock login (`/login` accepts any username without a password) to isolate and showcase the authorization layer (RLS/ABAC). A production version would replace `/login` with a real identity provider (OAuth/OIDC) issuing the same JWT claims. 
+
+**JWT Signing Secret**
+The repository uses a default fallback secret for JWT signing to ensure the demo runs out-of-the-box. In a production environment, the `JWT_SECRET_KEY` environment variable must be set to securely mint tokens and prevent malicious actors from forging Executive-clearance JWTs.
+
+## 🗺️ Roadmap (Next 10%)
+
+- **Real Identity Provider:** Integrate real OAuth/OIDC login to replace the mock login boundary.
+- **HNSW Indexing:** Implement HNSW indexing for `pgvector` to scale semantic search efficiently beyond a few thousand documents.
+- **Rate Limiting:** Implement token bucket rate-limiting on the public `/api/chat` demo endpoint to prevent abuse.
 
 ## ⚙️ Configuration
 
