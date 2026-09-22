@@ -16,8 +16,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const bubble = document.createElement('div');
         bubble.className = 'msg-bubble';
         
-        // Handle markdown-like line breaks
-        bubble.innerHTML = content.replace(/\n/g, '<br>');
+        // Handle markdown for AI messages, otherwise simple line breaks
+        if (type === 'ai' && typeof marked !== 'undefined') {
+            bubble.innerHTML = marked.parse(content);
+        } else {
+            bubble.innerHTML = content.replace(/\n/g, '<br>');
+        }
         
         msgDiv.appendChild(bubble);
         chatHistory.appendChild(msgDiv);
