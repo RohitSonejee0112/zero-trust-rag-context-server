@@ -9,10 +9,29 @@ An enterprise-grade **Retrieval-Augmented Generation (RAG)** architecture using 
 
 By combining **JSON Web Tokens (JWT)** and **PostgreSQL RLS**, this architecture guarantees that AI Agents can only retrieve and synthesize context from documents the active user is explicitly authorized to view. It eliminates the risk of prompt-injection data leaks by removing authorization logic from the LLM context window entirely, filtering documents securely at the database kernel level based on strict Attribute-Based Access Control (ABAC) clearances and explicit sharing rules.
 
+## 📋 Table of Contents
+- [🏗️ Architecture](#️-architecture)
+- [🚀 Features](#-features)
+- [🧪 Interactive Demo Questions](#-interactive-demo-questions)
+- [🛡️ Adversarial Prompt-Injection Testing](#️-adversarial-prompt-injection-testing)
+- [🤖 Automated Test Suite](#-automated-test-suite)
+- [⚡ Performance Benchmarking](#-performance-benchmarking)
+- [💻 Tech Stack](#-tech-stack)
+- [🚀 Try It Yourself (Live Demo)](#-try-it-yourself-live-demo)
+- [📝 Lessons Learned](#-lessons-learned)
+- [🔒 Threat Model & Known Limitations](#-threat-model--known-limitations)
+- [🗺️ Roadmap (Next 10%)](#️-roadmap-next-10)
+- [⚙️ Configuration](#️-configuration)
+- [🚀 Quick Start Guide](#-quick-start-guide)
+
 ## 🏗️ Architecture
 
 ![Architecture Diagram](Zero-Trust%20AI%20Document%20Retrieval%20Architecture%20updated.png)
 *(Note: A simplified view of the core RLS enforcement path — see Features below for exact ABAC clearance and vector search details).*
+
+## 🖥️ Web UI Demo
+![Web UI Demo](web_ui_demo.png)
+*(A live look at the application interface demonstrating the department-switcher and RLS-bounded context).*
 
 ## 🚀 Features
 - **Zero-Trust Retrieval**: The AI never holds the master database password. Queries are scoped strictly to the user's JWT identity.
