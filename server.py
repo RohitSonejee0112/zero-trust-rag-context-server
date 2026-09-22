@@ -34,14 +34,21 @@ async def lifespan(app: FastAPI):
         await conn.execute("SET ROLE app_user")
         
     if db_url:
-        app.state.db_pool = await asyncpg.create_pool(db_url, setup=init_connection)
+        app.state.db_pool = await asyncpg.create_pool(
+            db_url, 
+            setup=init_connection,
+            min_size=1,
+            max_size=5
+        )
     else:
         app.state.db_pool = await asyncpg.create_pool(
             user='app_user',
             password='app_password',
             database='mcp_auth_db',
             host='127.0.0.1',
-            port=5433
+            port=5433,
+            min_size=1,
+            max_size=5
         )
     yield
     await app.state.db_pool.close()
