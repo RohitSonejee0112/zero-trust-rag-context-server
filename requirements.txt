@@ -6,3 +6,5 @@ mcp
 python-dotenv
 pyjwt
 groq
+pyyaml  
+ 

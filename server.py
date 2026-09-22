@@ -234,6 +234,21 @@ async def chat_endpoint(req: ChatRequest):
     
     return {"response": final_response.choices[0].message.content}
 
+from fastapi import BackgroundTasks
+from sync_kb import sync_knowledge_base
+
+@app.post("/api/webhook/sync")
+async def webhook_sync(background_tasks: BackgroundTasks, request: Request):
+    """Triggered by GitHub Webhooks or manually to sync markdown docs"""
+    auth_header = request.headers.get("Authorization")
+    expected_token = os.getenv("SYNC_WEBHOOK_SECRET", "default-insecure-secret")
+    
+    if auth_header != f"Bearer {expected_token}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
+    background_tasks.add_task(sync_knowledge_base)
+    return {"status": "Sync triggered"}
+
 @app.get("/health")
 async def health():
     return {"status": "healthy"}

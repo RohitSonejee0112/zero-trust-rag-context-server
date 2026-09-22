@@ -20,7 +20,9 @@ CREATE TABLE documents (
     content TEXT NOT NULL,
     embedding vector(384),
     department_id INTEGER REFERENCES departments(id),
-    sensitivity_level INTEGER NOT NULL DEFAULT 1 -- 1=Standard, 2=Confidential, 3=Secret
+    sensitivity_level INTEGER NOT NULL DEFAULT 1, -- 1=Standard, 2=Confidential, 3=Secret
+    source_file VARCHAR(255) UNIQUE,
+    content_hash VARCHAR(64)
 );
 
 CREATE TABLE document_shares (

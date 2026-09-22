@@ -37,6 +37,7 @@ By combining **JSON Web Tokens (JWT)** and **PostgreSQL RLS**, this architecture
 
 ## 🚀 Features
 - **Zero-Trust Retrieval**: The AI never holds the master database password. Queries are scoped strictly to the user's JWT identity.
+- **Self-Maintaining Knowledge Base**: The system monitors a directory of Markdown files with YAML frontmatter. When changes are pushed (via GitHub webhook), it hashes the files, diffs them against the database, and only generates new semantic vectors for modified files. Deleted files are automatically pruned.
 - **pgvector Semantic Search**: Queries are embedded into vectors using HuggingFace (`all-MiniLM-L6-v2`). Postgres calculates cosine distance (`<=>`) *only* on rows the user is legally allowed to see.
 - **PostgreSQL RLS**: Document access is restricted at the kernel level of the database.
 - **Enterprise ABAC Policies**: Permissions go far beyond simple department matching. The RLS policies strictly enforce user `clearance_levels` against document `sensitivity_levels`, and evaluate explicit cross-department overrides via a `document_shares` join table.
